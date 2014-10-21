@@ -108,9 +108,9 @@ ParallelLoopBody::~ParallelLoopBody() {}
         ProxyLoopBody(const ParallelLoopBody& _body, const Range& _r)
         : ParallelLoopBodyWrapper(_body, _r)
         {}
-        void operator ()(const tbb::blocked_range<int>& range) const
+        void operator ()(std::size_t i) const
         {
-            this->ParallelLoopBodyWrapper::operator()(Range(range.begin(), range.end()));
+            this->ParallelLoopBodyWrapper::operator()(Range(i,i+1));
         }
     };
 #elif defined HAVE_OPENMP
