@@ -1,5 +1,3 @@
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define MAX(a,b) (((a)>(b))?(a):(b))
 #include <cmath>
 #include <stdint.h>
 #include <iostream>
@@ -142,33 +140,32 @@ static int numThreadsMax = omp_get_max_threads();
 
 /* ================================   parallel_for_  ================================ */
 
-void parallel_for_(const Range& range, const ParallelLoopBody& body)
+void parallel_for_(std::size_t start, std::size_t end, const ParallelLoopBody& body)
 {
 #ifdef PARALLEL_FRAMEWORK
-
     if(numThreads != 0)
     {
-        ProxyLoopBody pbody(body, range);
-        if( range.end - range.start == 1 )
+        ProxyLoopBody pbody(body, Range(start,end));
+        if( end - start == 1 )
         {
-            body(range);
+            body(Range(start,end));
             return;
         }
 
 #if defined HAVE_TBB
 
-        tbb::parallel_for(tbb::blocked_range<int>(range.start, range.end), pbody);
+        tbb::parallel_for(start, end, pbody);
 
 #elif defined HAVE_OPENMP
 
         #pragma omp parallel for schedule(dynamic)
-        for (int i = range.start; i < range.end; ++i)
+        for (int i = start; i < end; ++i)
             pbody(Range(i, i + 1));
 
 #elif defined HAVE_GCD
 
         dispatch_queue_t concurrent_queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-        dispatch_apply_f(range.end - range.start, concurrent_queue, &pbody, block_function);
+        dispatch_apply_f(end - start, concurrent_queue, &pbody, block_function);
 
 #else
 
@@ -181,7 +178,7 @@ void parallel_for_(const Range& range, const ParallelLoopBody& body)
 
 #endif // PARALLEL_FRAMEWORK
     {
-        body(range);
+        body(Range(start,end));
     }
 }
 
@@ -231,7 +228,7 @@ int main()
     sum.m1 = &v1[0];
     sum.m2 = &v2[0];
     sum.result = &v3[0];
-    parallel_for_(Range(0,100), sum);
+    parallel_for_(0,100, sum);
     Print(v3);
     return 0;
 }
