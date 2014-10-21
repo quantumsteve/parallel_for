@@ -68,7 +68,6 @@ public:
     Range(int _start, int _end) : start(_start), end(_end) {}
     int size() const { return end - start; }
     bool empty() const;
-    //static Range all() { return Range(INT_MIN, INT_MAX); };
     int start, end;
 };
 
@@ -86,36 +85,30 @@ ParallelLoopBody::~ParallelLoopBody() {}
     class ParallelLoopBodyWrapper
     {
     public:
-        ParallelLoopBodyWrapper(const ParallelLoopBody& _body, const Range& _r, double _nstripes=-1.)
+        ParallelLoopBodyWrapper(const ParallelLoopBody& _body, const Range& _r)
         {
             body = &_body;
             wholeRange = _r;
             double len = wholeRange.end - wholeRange.start;
-            nstripes = round(_nstripes <= 0 ? len : MIN(MAX(_nstripes, 1.), len));
         }
         void operator()(const Range& sr) const
         {
             Range r;
-            r.start = (int)(wholeRange.start +
-                            ((uint64_t)sr.start*(wholeRange.end - wholeRange.start) + nstripes/2)/nstripes);
-            r.end = sr.end >= nstripes ? wholeRange.end : (int)(wholeRange.start +
-                            ((uint64_t)sr.end*(wholeRange.end - wholeRange.start) + nstripes/2)/nstripes);
+            r.start = wholeRange.start;
+            r.end = wholeRange.end;
             (*body)(r);
         }
-        Range stripeRange() const { return Range(0, nstripes); }
-
     protected:
         const ParallelLoopBody* body;
         Range wholeRange;
-        int nstripes;
     };
 
 #if defined HAVE_TBB
     class ProxyLoopBody : public ParallelLoopBodyWrapper
     {
     public:
-        ProxyLoopBody(const ParallelLoopBody& _body, const Range& _r, double _nstripes)
-        : ParallelLoopBodyWrapper(_body, _r, _nstripes)
+        ProxyLoopBody(const ParallelLoopBody& _body, const Range& _r)
+        : ParallelLoopBodyWrapper(_body, _r)
         {}
         void operator ()(const tbb::blocked_range<int>& range) const
         {
@@ -149,15 +142,14 @@ static int numThreadsMax = omp_get_max_threads();
 
 /* ================================   parallel_for_  ================================ */
 
-void parallel_for_(const Range& range, const ParallelLoopBody& body, double nstripes = -1.)
+void parallel_for_(const Range& range, const ParallelLoopBody& body)
 {
 #ifdef PARALLEL_FRAMEWORK
 
     if(numThreads != 0)
     {
-        ProxyLoopBody pbody(body, range, nstripes);
-        Range stripeRange = pbody.stripeRange();
-        if( stripeRange.end - stripeRange.start == 1 )
+        ProxyLoopBody pbody(body, range);
+        if( range.end - range.start == 1 )
         {
             body(range);
             return;
@@ -165,22 +157,22 @@ void parallel_for_(const Range& range, const ParallelLoopBody& body, double nstr
 
 #if defined HAVE_TBB
 
-        tbb::parallel_for(tbb::blocked_range<int>(stripeRange.start, stripeRange.end), pbody);
+        tbb::parallel_for(tbb::blocked_range<int>(range.start, range.end), pbody);
 
 #elif defined HAVE_OPENMP
 
         #pragma omp parallel for schedule(dynamic)
-        for (int i = stripeRange.start; i < stripeRange.end; ++i)
+        for (int i = range.start; i < range.end; ++i)
             pbody(Range(i, i + 1));
 
 #elif defined HAVE_GCD
 
         dispatch_queue_t concurrent_queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-        dispatch_apply_f(stripeRange.end - stripeRange.start, concurrent_queue, &pbody, block_function);
+        dispatch_apply_f(range.end - range.start, concurrent_queue, &pbody, block_function);
 
 #else
 
-#error You have hacked and compiling with unsupported parallel framework
+#error You have hacked and are compiling with an unsupported parallel framework
 
 #endif
 
@@ -189,7 +181,6 @@ void parallel_for_(const Range& range, const ParallelLoopBody& body, double nstr
 
 #endif // PARALLEL_FRAMEWORK
     {
-        (void)nstripes;
         body(range);
     }
 }
@@ -217,6 +208,14 @@ void ParallelClass::operator()( const Range & r ) const
     }
 }
 
+const char* currentParallelFramework() {
+#ifdef PARALLEL_FRAMEWORK
+    return PARALLEL_FRAMEWORK;
+#else
+    return NULL;
+#endif
+}
+
 
 void Print(const std::vector<double>& v) {
     for(auto& i : v)
@@ -229,7 +228,7 @@ int main()
     std::vector<double> v1(100,1.0),v2(100,2.0),v3(100,0.0);
     std::cout << currentParallelFramework() << std::endl;
     ParallelClass sum;
-    sum.m1 = &v1;
+    sum.m1 = &v1[0];
     sum.m2 = &v2[0];
     sum.result = &v3[0];
     parallel_for_(Range(0,100), sum);
