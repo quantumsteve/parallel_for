@@ -4,9 +4,29 @@
 #include <random>
 #include <chrono>
 
-/* IMPORTANT: always use the same order of defines
+
+// The syntax used to define a pragma within a macro is different on windows and GCC
+#ifdef _MSC_VER
+#define PRAGMA __pragma
+#else //_MSC_VER
+#define PRAGMA(x) _Pragma(#x)
+#endif //_MSC_VER
+
+#ifdef OLD_BEHAVIOR
+
+#define PARALLEL_FRAMEWORK "old behavior"
+
+#define BEGIN_PARALLEL_FOR(condition,start,end,variable) \
+PRAGMA(omp parallel for if (condition) ) \
+for (int variable = start; variable < end; ++variable)
+    
+#define END_PARALLEL_FOR
+
+#else
+
+/*
    1. HAVE_TBB         - 3rdparty library, should be explicitly enabled
-   3. HAVE_OPENMP      - integrated to compiler, should be explicitly enabled
+   2. HAVE_OPENMP      - integrated to compiler, defined iff HAVE_TBB is not defined and _OPENMP is defined
 */
 
 #if defined HAVE_TBB
@@ -28,7 +48,7 @@ void parallel_for(bool parallel, int start, int end, const T& body)
 #ifdef HAVE_TBB
     tbb::parallel_for(start, end, body);
 #else
-    #pragma omp parallel for
+    PRAGMA(omp parallel for)
     for (int i = start; i < end; ++i)
       body(i);
 #endif
@@ -39,6 +59,15 @@ void parallel_for(bool parallel, int start, int end, const T& body)
       body(i);
   }
 }
+
+#define BEGIN_PARALLEL_FOR(parallel,start,end,variable) \
+parallel_for(parallel, start, end, [&](int variable)
+
+#define END_PARALLEL_FOR \
+);
+
+
+#endif
 
 void fillMatrix( std::vector<std::vector<double>>& matrix)
 {
@@ -53,12 +82,6 @@ void fillMatrix( std::vector<std::vector<double>>& matrix)
         }
     }
 }
-
-#define BEGIN_PARALLEL_FOR(parallel,start,end,variable) \
-parallel_for(parallel, start, end, [&](int variable)
-
-#define END_PARALLEL_FOR \
-);
 
 int main()
 {
