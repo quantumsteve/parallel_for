@@ -5,25 +5,25 @@
 #include <chrono>
 
 
+// If the compiler supports lambdas, use them.
+#ifndef _USE_LAMBDAS
+  #if (__GNUC__ > 4 || __GNUC__ == 4 && __GNUC_MINOR__ >= 5) || _MSC_VER >= 1600
+    #define _USE_LAMBDAS 1
+  #elif __clang__
+    #define _USE_LAMBDAS __has_feature(cxx_lambdas)
+  #else
+    #define _USE_LAMBDAS 0
+  #endif
+#endif
+
 // The syntax used to define a pragma within a macro is different on windows and GCC
 #ifdef _MSC_VER
-#define PRAGMA __pragma
+  #define PRAGMA __pragma
 #else //_MSC_VER
-#define PRAGMA(x) _Pragma(#x)
+  #define PRAGMA(x) _Pragma(#x)
 #endif //_MSC_VER
 
-#ifdef OLD_BEHAVIOR
-
-#define PARALLEL_FRAMEWORK "old behavior"
-
-#define BEGIN_PARALLEL_FOR(condition,start,end,variable) \
-PRAGMA(omp parallel for if (condition) ) \
-for (int variable = start; variable < end; ++variable)
-    
-#define END_PARALLEL_FOR
-
-#else
-
+#ifdef _USE_LAMBDAS
 /*
    1. HAVE_TBB         - 3rdparty library, should be explicitly enabled
    2. HAVE_OPENMP      - integrated to compiler, defined iff HAVE_TBB is not defined and _OPENMP is defined
@@ -36,6 +36,8 @@ for (int variable = start; variable < end; ++variable)
   #define PARALLEL_FRAMEWORK "openmp"
   #define HAVE_OPENMP
   #include <omp.h>
+#else
+  #define PARALLEL_FRAMEWORK "none"
 #endif // PARALLEL_FRAMEWORK
 
 /* ================================   parallel_for_  ================================ */
@@ -66,6 +68,15 @@ parallel_for(parallel, start, end, [&](int variable)
 #define END_PARALLEL_FOR \
 );
 
+#else
+
+#define PARALLEL_FRAMEWORK "deprecated behavior"
+
+#define BEGIN_PARALLEL_FOR(condition,start,end,variable) \
+PRAGMA(omp parallel for if (condition) ) \
+for (int variable = start; variable < end; ++variable)
+
+#define END_PARALLEL_FOR
 
 #endif
 
@@ -111,7 +122,6 @@ int main()
     std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
     std::cout << "It took me " << time_span.count() << " seconds." << std::endl;
-    
     
     std::cout << "serial fallback: " << std::endl;
     t1 = std::chrono::high_resolution_clock::now();
