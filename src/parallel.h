@@ -23,7 +23,7 @@ typedef Poco::Mutex RecursiveMutex;
   #define PRAGMA(x) _Pragma(#x)
 #endif //_MSC_VER
 
-#ifdef _USE_LAMBDAS
+#if _USE_LAMBDAS && !OLD_BEHAVIOR
 /*
    1. HAVE_TBB         - 3rdparty library, should be explicitly enabled
    2. HAVE_OPENMP      - integrated to compiler, defined iff HAVE_TBB is not defined and _OPENMP is defined
