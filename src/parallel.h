@@ -16,6 +16,21 @@ typedef Poco::Mutex RecursiveMutex;
   #endif
 #endif
 
+#define GET_MACRO(_1,_2,_3,NAME,...) NAME
+#define THREADSAFE(...) GET_MACRO(__VA_ARGS__,TS3,TS2,TS1)(__VA_ARGS__)
+
+#define TS1(ws1) \
+  !ws1 || ws1->threadSafe()
+
+#define TS2(ws1, ws2) \
+  ( !ws1 || works1->threadSafe() ) && \
+  ( !ws2 || works2->threadSafe() )
+
+#define TS3(ws1, ws2, ws3) \
+  ( !ws1 || ws1->threadSafe() ) && \
+  ( !ws2 || ws2->threadSafe() ) && \
+  ( !ws3 || ws3->threadSafe() )
+
 // The syntax used to define a pragma within a macro is different on windows and GCC
 #ifdef _MSC_VER
   #define PRAGMA __pragma
