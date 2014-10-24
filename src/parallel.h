@@ -23,8 +23,8 @@ typedef Poco::Mutex RecursiveMutex;
   !ws1 || ws1->threadSafe()
 
 #define TS2(ws1, ws2) \
-  ( !ws1 || works1->threadSafe() ) && \
-  ( !ws2 || works2->threadSafe() )
+  ( !ws1 || ws1->threadSafe() ) && \
+  ( !ws2 || ws2->threadSafe() )
 
 #define TS3(ws1, ws2, ws3) \
   ( !ws1 || ws1->threadSafe() ) && \
