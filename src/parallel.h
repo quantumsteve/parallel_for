@@ -7,10 +7,10 @@ typedef Poco::Mutex RecursiveMutex;
 
 // If the compiler supports lambdas, use them.
 #ifndef _USE_LAMBDAS
-  #if (__GNUC__ > 4 || __GNUC__ == 4 && __GNUC_MINOR__ >= 5) || _MSC_VER >= 1600
-    #define _USE_LAMBDAS 1
-  #elif __clang__
+  #if __clang__
     #define _USE_LAMBDAS __has_feature(cxx_lambdas)
+  #elif (__GNUC__ > 4 || __GNUC__ == 4 && __GNUC_MINOR__ >= 5) || _MSC_VER >= 1600
+    #define _USE_LAMBDAS 1
   #else
     #define _USE_LAMBDAS 0
   #endif
@@ -38,7 +38,7 @@ typedef Poco::Mutex RecursiveMutex;
   #define PRAGMA(x) _Pragma(#x)
 #endif //_MSC_VER
 
-#if _USE_LAMBDAS && !OLD_BEHAVIOR
+#if _USE_LAMBDAS && !defined(OLD_BEHAVIOR)
 /*
    1. HAVE_TBB         - 3rdparty library, should be explicitly enabled
    2. HAVE_OPENMP      - integrated to compiler, defined iff HAVE_TBB is not defined and _OPENMP is defined
@@ -57,28 +57,32 @@ typedef Poco::Mutex RecursiveMutex;
 
 /* ================================   parallel_for_  ================================ */
 
-template <class T>
-void parallel_for(bool parallel, int start, int end, const T& body)
+template <class func>
+void parallel_for(bool parallel, std::size_t start, std::size_t end, const func& body)
 {
   if( parallel )
   {
 #ifdef HAVE_TBB
     tbb::parallel_for(start, end, body);
+#elif (defined(HAVE_OPENMP) && defined(_MSC_VER))
+    PRAGMA(omp parallel for)
+    for (long i = start; i < end; ++i)
+      body(static_cast<std::size_t>(i));
 #else
     PRAGMA(omp parallel for)
-    for (int i = start; i < end; ++i)
+    for (std::size_t i = start; i < end; ++i)
       body(i);
 #endif
   }
   else
   {
-    for (int i = start; i < end; ++i)
+    for (std::size_t i = start; i < end; ++i)
       body(i);
   }
 }
 
 #define BEGIN_PARALLEL_FOR(parallel,start,end,variable) \
-parallel_for(parallel, start, end, [&](int variable)
+parallel_for(parallel, start, end, [&](std::size_t variable)
 
 #define END_PARALLEL_FOR \
 );
@@ -87,10 +91,21 @@ parallel_for(parallel, start, end, [&](int variable)
 
 #define PARALLEL_FRAMEWORK "deprecated behavior"
 
-#define BEGIN_PARALLEL_FOR(condition,start,end,variable) \
-PRAGMA(omp parallel for if (condition) ) \
-for (int variable = start; variable < end; ++variable)
+#ifdef _MSC_VER
+  #define BEGIN_PARALLEL_FOR(condition,start,end,variable) \
+  PRAGMA(omp parallel for if (condition) ) \
+  for (long donotuseme = static_cast<long>(start); donotuseme < static_cast<long>(end); ++donotuseme) \
+  { \
+    std::size_t variable(static_cast<std::size_t>(donotuseme));
 
-#define END_PARALLEL_FOR
+  #define END_PARALLEL_FOR }
+#else
+  #define BEGIN_PARALLEL_FOR(condition,start,end,variable) \
+  PRAGMA(omp parallel for if (condition) ) \
+  for (std::size_t variable = start; variable < end; ++variable)
+
+  #define END_PARALLEL_FOR
+#endif
+      
 
 #endif

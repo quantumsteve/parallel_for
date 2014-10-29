@@ -6,7 +6,7 @@
 
 #include "parallel.h"
 
-void fillMatrix( std::vector<std::vector<double>>& matrix)
+static void fillMatrix( std::vector<std::vector<double>>& matrix)
 {
     std::size_t length = matrix.size();
     std::mt19937 generator;
@@ -22,8 +22,7 @@ void fillMatrix( std::vector<std::vector<double>>& matrix)
 
 int main()
 {
-    if (PARALLEL_FRAMEWORK)
-        std::cout << "Parallel Framework: " << PARALLEL_FRAMEWORK << std::endl;
+    std::cout << "Parallel Framework: " << PARALLEL_FRAMEWORK << std::endl;
     
     std::size_t length(1000);
     std::vector<std::vector<double>> a(length, std::vector<double>(length)),
