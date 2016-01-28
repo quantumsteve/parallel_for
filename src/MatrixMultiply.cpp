@@ -64,6 +64,22 @@ int main()
     t2 = std::chrono::high_resolution_clock::now();
     time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
     std::cout << "It took me " << time_span.count() << " seconds." << std::endl;
+
+    std::cout << "serial old: " << std::endl;
+    t1 = std::chrono::high_resolution_clock::now();
+    for (std::size_t i=0;i<length;++i)
+    {
+        for (std::size_t j = 0; j < length; ++j)
+        {
+            for (std::size_t k = 0; k < length; ++k)
+            {
+                c[i][j] += a[i][k] * b[k][j];
+            }
+        }
+    }
+    t2 = std::chrono::high_resolution_clock::now();
+    time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+    std::cout << "It took me " << time_span.count() << " seconds." << std::endl;
     
     return 0;
 }
