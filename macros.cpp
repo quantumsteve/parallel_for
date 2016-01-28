@@ -12,15 +12,16 @@ public:
 };
 
 int main() {
+
   auto ws4 = std::make_shared<SafeWS>();
   auto ws5 = std::make_shared<UnsafeWS>();
 
-  bool test1 = THREADSAFE(ws4);
-  bool test2 = THREADSAFE(ws5);
-  bool test3 = THREADSAFE(ws4, ws4);
-  bool test4 = THREADSAFE(ws4, ws5);
-  bool test5 = THREADSAFE(ws4, ws4, ws4);
-  bool test6 = THREADSAFE(ws4, ws4, ws5);
+  bool test1 = ThreadSafe(ws4.get());
+  bool test2 = ThreadSafe(ws5.get());
+  bool test3 = ThreadSafe(ws4.get(), ws4.get());
+  bool test4 = ThreadSafe(ws4.get(), ws5.get());
+  bool test5 = ThreadSafe(ws4.get(), ws4.get(), ws4.get());
+  bool test6 = ThreadSafe(ws4.get(), ws4.get(), ws5.get());
 
   std::cout << test1 << " " << test3 << " " << test5 << std::endl;
   std::cout << test2 << " " << test4 << " " << test6 << std::endl;

@@ -6,7 +6,7 @@
 
 #include "parallel.h"
 
-static void fillMatrix(std::vector<std::vector<double>> &matrix) {
+void fillMatrix(std::vector<std::vector<double>> &matrix) {
   std::size_t length = matrix.size();
   std::mt19937 generator;
   std::uniform_real_distribution<double> distribution(0.0, 1.0);
@@ -29,7 +29,7 @@ int main() {
 
   std::chrono::high_resolution_clock::time_point t1 =
       std::chrono::high_resolution_clock::now();
-  parallel_for(par, 0, length, [&a, &b, &c, length](std::size_t i) {
+  parallel_for_each(par, 0, length, [&a, &b, &c, length](std::size_t i) {
     for (std::size_t j = 0; j < length; ++j) {
       for (std::size_t k = 0; k < length; ++k) {
         c[i][j] += a[i][k] * b[k][j];
@@ -45,7 +45,7 @@ int main() {
 
   std::cout << "serial fallback: " << std::endl;
   t1 = std::chrono::high_resolution_clock::now();
-  parallel_for(seq, 0, length, [&a, &b, &c, length](std::size_t i) {
+  parallel_for_each(seq, 0, length, [&a, &b, &c, length](std::size_t i) {
     for (std::size_t j = 0; j < length; ++j) {
       for (std::size_t k = 0; k < length; ++k) {
         c[i][j] += a[i][k] * b[k][j];
