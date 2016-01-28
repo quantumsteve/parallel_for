@@ -1,16 +1,13 @@
 #include <iostream>
+#include <mutex>
 #include "parallel.h"
 
-int main()
-{
-    Mutex mutex;
-    std::size_t length(10);
-    BEGIN_PARALLEL_FOR(true,0,length,i)
-    {
-        Mutex::ScopedLock lock(mutex);
-        std::cout << "Hello from task " << i << std::endl;
-    }
-    END_PARALLEL_FOR
-    
-    return 0;
+int main() {
+  std::mutex aMutex;
+  parallel_for(par, 0, 10, [&aMutex](std::size_t i) {
+    std::lock_guard<std::mutex> lock(aMutex);
+    std::cout << "Hello from task " << i << std::endl;
+  });
+
+  return 0;
 }
