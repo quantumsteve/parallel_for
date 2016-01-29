@@ -37,7 +37,7 @@ enum execution_policy : bool { seq, par }; // parallel stl also includes par_vec
 
 template <mantid_threading_library type, typename func>
 inline typename std::enable_if<type == NONE>::type
-parallel_for_each(execution_policy policy, std::size_t start, std::size_t end,
+parallel_for_each(execution_policy /*policy*/, std::size_t start, std::size_t end,
                   func body) {
   std::for_each(boost::counting_iterator<std::size_t>(start),
                 boost::counting_iterator<std::size_t>(end), body);

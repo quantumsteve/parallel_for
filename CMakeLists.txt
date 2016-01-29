@@ -28,6 +28,8 @@ endif()
 
 message(STATUS "Using ${MANTID_PARALLELISM_BACKEND} execution")
 
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra" )
+
 if(${MANTID_PARALLELISM_BACKEND} STREQUAL "OPENMP")
   add_definitions(-DUSE_OPENMP)
   set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}" )
