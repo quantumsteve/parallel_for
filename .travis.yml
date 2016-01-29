@@ -19,9 +19,8 @@ before_install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; 
     then 
       brew update > /dev/null 2>&1;
-      brew tap homebrew/science;
       brew install --quite cmake;
-      brew install --quite boost
+      brew install --quite boost;
       brew install --quiet tbb --c++11;
     fi
   - if [ "$TRAVIS_OS_NAME" == "linux" ]; 
